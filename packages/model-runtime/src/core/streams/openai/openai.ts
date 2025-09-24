@@ -1,7 +1,6 @@
+import { ChatCitationItem, ChatMessageError } from '@lobechat/types';
 import OpenAI from 'openai';
 import type { Stream } from 'openai/streaming';
-
-import { ChatCitationItem, ChatMessageError } from '@/types/message';
 
 import { ChatStreamCallbacks } from '../../../types';
 import { AgentRuntimeErrorType, ILobeAgentRuntimeErrorType } from '../../../types/error';
@@ -57,8 +56,17 @@ const transformOpenAIStream = (
 
     const errorData = {
       body: chunk,
-      type: 'errorType' in chunk ? chunk.errorType : AgentRuntimeErrorType.ProviderBizError,
-    } as ChatMessageError;
+      message:
+        'message' in chunk
+          ? typeof chunk.message === 'string'
+            ? chunk.message
+            : JSON.stringify(chunk)
+          : JSON.stringify(chunk),
+      type:
+        'errorType' in chunk
+          ? (chunk.errorType as typeof AgentRuntimeErrorType.ProviderBizError)
+          : AgentRuntimeErrorType.ProviderBizError,
+    } satisfies ChatMessageError;
     return { data: errorData, id: 'first_chunk_error', type: 'error' };
   }
 
@@ -416,13 +424,20 @@ export interface OpenAIStreamOptions {
     name: string;
   }) => ILobeAgentRuntimeErrorType | undefined;
   callbacks?: ChatStreamCallbacks;
+  enableStreaming?: boolean; // 选择 TPS 计算方式（非流式时传 false）
   inputStartAt?: number;
   provider?: string;
 }
 
 export const OpenAIStream = (
   stream: Stream<OpenAI.ChatCompletionChunk> | ReadableStream,
-  { callbacks, provider, bizErrorTypeTransformer, inputStartAt }: OpenAIStreamOptions = {},
+  {
+    callbacks,
+    provider,
+    bizErrorTypeTransformer,
+    inputStartAt,
+    enableStreaming = true,
+  }: OpenAIStreamOptions = {},
 ) => {
   const streamStack: StreamContext = { id: '' };
 
@@ -438,7 +453,13 @@ export const OpenAIStream = (
       // provider like huggingface or minimax will return error in the stream,
       // so in the first Transformer, we need to handle the error
       .pipeThrough(createFirstErrorHandleTransformer(bizErrorTypeTransformer, provider))
-      .pipeThrough(createTokenSpeedCalculator(transformWithProvider, { inputStartAt, streamStack }))
+      .pipeThrough(
+        createTokenSpeedCalculator(transformWithProvider, {
+          enableStreaming: enableStreaming,
+          inputStartAt,
+          streamStack,
+        }),
+      )
       .pipeThrough(createSSEProtocolTransformer((c) => c, streamStack))
       .pipeThrough(createCallbacksTransformer(callbacks))
   );

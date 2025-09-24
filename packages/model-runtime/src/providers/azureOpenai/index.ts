@@ -1,4 +1,5 @@
 import debug from 'debug';
+import { ModelProvider } from 'model-bank';
 import OpenAI, { AzureOpenAI } from 'openai';
 import type { Stream } from 'openai/streaming';
 
@@ -12,7 +13,6 @@ import {
   Embeddings,
   EmbeddingsOptions,
   EmbeddingsPayload,
-  ModelProvider,
 } from '../../types';
 import { AgentRuntimeErrorType } from '../../types/error';
 import { CreateImagePayload, CreateImageResponse } from '../../types/image';
@@ -96,9 +96,12 @@ export class LobeAzureOpenAI implements LobeRuntimeAI {
         });
       } else {
         const stream = transformResponseToStream(response as OpenAI.ChatCompletion);
-        return StreamingResponse(OpenAIStream(stream, { callbacks: options?.callback }), {
-          headers: options?.headers,
-        });
+        return StreamingResponse(
+          OpenAIStream(stream, { callbacks: options?.callback, enableStreaming: false }),
+          {
+            headers: options?.headers,
+          },
+        );
       }
     } catch (e) {
       return this.handleError(e, model);

@@ -1,10 +1,9 @@
 import { GenerateContentResponse } from '@google/genai';
-
-import { GroundingSearch } from '@/types/search';
+import { GroundingSearch } from '@lobechat/types';
 
 import { ModelTokensUsage } from '../../types';
 import { nanoid } from '../../utils/uuid';
-import { type GoogleAIStreamOptions } from './google-ai';
+import { type GoogleAIStreamOptions } from './google';
 import {
   StreamContext,
   StreamProtocolChunk,
@@ -143,12 +142,18 @@ const transformVertexAIStream = (
 
 export const VertexAIStream = (
   rawStream: ReadableStream<GenerateContentResponse>,
-  { callbacks, inputStartAt }: GoogleAIStreamOptions = {},
+  { callbacks, inputStartAt, enableStreaming = true }: GoogleAIStreamOptions = {},
 ) => {
   const streamStack: StreamContext = { id: 'chat_' + nanoid() };
 
   return rawStream
-    .pipeThrough(createTokenSpeedCalculator(transformVertexAIStream, { inputStartAt, streamStack }))
+    .pipeThrough(
+      createTokenSpeedCalculator(transformVertexAIStream, {
+        enableStreaming: enableStreaming,
+        inputStartAt,
+        streamStack,
+      }),
+    )
     .pipeThrough(createSSEProtocolTransformer((c) => c, streamStack))
     .pipeThrough(createCallbacksTransformer(callbacks));
 };

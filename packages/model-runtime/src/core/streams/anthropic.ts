@@ -1,7 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Stream } from '@anthropic-ai/sdk/streaming';
-
-import { ChatCitationItem, ModelTokensUsage } from '@/types/message';
+import { ChatCitationItem, ModelTokensUsage } from '@lobechat/types';
 
 import { ChatStreamCallbacks } from '../../types';
 import {
@@ -240,12 +239,13 @@ export const transformAnthropicStream = (
 
 export interface AnthropicStreamOptions {
   callbacks?: ChatStreamCallbacks;
+  enableStreaming?: boolean; // 选择 TPS 计算方式（非流式时传 false）
   inputStartAt?: number;
 }
 
 export const AnthropicStream = (
   stream: Stream<Anthropic.MessageStreamEvent> | ReadableStream,
-  { callbacks, inputStartAt }: AnthropicStreamOptions = {},
+  { callbacks, inputStartAt, enableStreaming = true }: AnthropicStreamOptions = {},
 ) => {
   const streamStack: StreamContext = { id: '' };
 
@@ -254,7 +254,11 @@ export const AnthropicStream = (
 
   return readableStream
     .pipeThrough(
-      createTokenSpeedCalculator(transformAnthropicStream, { inputStartAt, streamStack }),
+      createTokenSpeedCalculator(transformAnthropicStream, {
+        enableStreaming: enableStreaming,
+        inputStartAt,
+        streamStack,
+      }),
     )
     .pipeThrough(createSSEProtocolTransformer((c) => c, streamStack))
     .pipeThrough(createCallbacksTransformer(callbacks));
