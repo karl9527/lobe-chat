@@ -33,7 +33,7 @@ jobs:
           images: docker.foxming.com/hm-docker/my-chat-web/lobe-chat-database
           tags: |
             type=raw,value=latest
-            type=raw,value=1.99.0
+            type=raw,value=1.136.3
             type=ref,event=tag
 
       - name: Set up QEMU
