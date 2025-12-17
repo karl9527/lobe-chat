@@ -1,4 +1,4 @@
-import { ModelSpeed, ModelTokensUsage, ModelUsage } from '@/types/message';
+import { ModelPerformance, ModelTokensUsage, ModelUsage } from '@lobechat/types';
 
 import { MessageToolCall, MessageToolCallChunk } from './toolsCalling';
 
@@ -47,6 +47,10 @@ export type UserMessageContentPart =
 export interface OpenAIChatMessage {
   content: string | UserMessageContentPart[];
   name?: string;
+  reasoning?: {
+    content?: string;
+    duration?: number;
+  };
   role: LLMRoleType;
   tool_call_id?: string;
   tool_calls?: MessageToolCall[];
@@ -108,7 +112,7 @@ export interface ChatStreamPayload {
    * @title 生成文本的随机度量，用于控制文本的创造性和多样性
    * @default 1
    */
-  temperature: number;
+  temperature?: number;
   text?: {
     verbosity?: 'low' | 'medium' | 'high';
   };
@@ -186,7 +190,7 @@ export interface ChatCompletionTool {
 
 export interface OnFinishData {
   grounding?: any;
-  speed?: ModelSpeed;
+  speed?: ModelPerformance;
   text: string;
   thinking?: string;
   toolsCalling?: MessageToolCall[];
@@ -207,6 +211,9 @@ export interface ChatStreamCallbacks {
   onThinking?: (content: string) => Promise<void> | void;
   onToolsCalling?: (data: {
     chunk: MessageToolCallChunk[];
+    /**
+     * full tools calling array
+     */
     toolsCalling: MessageToolCall[];
   }) => Promise<void> | void;
   onUsage?: (usage: ModelTokensUsage) => Promise<void> | void;

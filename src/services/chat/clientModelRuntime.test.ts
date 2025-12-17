@@ -38,7 +38,7 @@ vi.stubGlobal(
   vi.fn(() => Promise.resolve(new Response(JSON.stringify({ some: 'data' })))),
 );
 
-vi.mock('@/utils/fetch', async (importOriginal) => {
+vi.mock('@lobechat/fetch-sse', async (importOriginal) => {
   const module = await importOriginal();
 
   return { ...(module as any), getMessageError: vi.fn() };
@@ -46,7 +46,7 @@ vi.mock('@/utils/fetch', async (importOriginal) => {
 
 // Mock image processing utilities
 vi.mock('@/utils/url', () => ({
-  isLocalUrl: vi.fn(),
+  isDesktopLocalStaticServerUrl: vi.fn(),
 }));
 
 vi.mock('@/utils/imageToBase64', () => ({
@@ -81,12 +81,12 @@ beforeEach(async () => {
   vi.clearAllMocks();
 
   // Set default mock return values for image processing utilities
-  const { isLocalUrl } = await import('@/utils/url');
+  const { isDesktopLocalStaticServerUrl } = await import('@/utils/url');
   const { imageUrlToBase64 } = await import('@/utils/imageToBase64');
   const { parseDataUri } = await import('@lobechat/model-runtime');
 
   vi.mocked(parseDataUri).mockReturnValue({ type: 'url', base64: null, mimeType: null });
-  vi.mocked(isLocalUrl).mockReturnValue(false);
+  vi.mocked(isDesktopLocalStaticServerUrl).mockReturnValue(false);
   vi.mocked(imageUrlToBase64).mockResolvedValue({
     base64: 'mock-base64',
     mimeType: 'image/jpeg',
